@@ -1,0 +1,27 @@
+{
+  "name": "SOLARWATT Service Portal",
+  "short_name": "SOLARWATT Service",
+  "description": "Service desk for SOLARWATT Australia — cases, installers, knowledge, commissioning, troubleshooting and diagrams.",
+  "id": "/solarwatt-service-portal",
+  "start_url": "./Service-Portal.html#/dashboard",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#EDF2F3",
+  "theme_color": "#0B5754",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["business", "productivity"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Dashboard", "short_name": "Dashboard", "url": "./Service-Portal.html#/dashboard", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
+    { "name": "Cases", "short_name": "Cases", "url": "./Service-Portal.html#/cases", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
+    { "name": "Knowledge", "short_name": "Knowledge", "url": "./Service-Portal.html#/knowledge", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] }
+  ],
+  "prefer_related_applications": false
+}

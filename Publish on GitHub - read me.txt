@@ -1,0 +1,55 @@
+SOLARWATT SERVICE PORTAL — publish on GitHub Pages and install it
+==================================================================
+
+Everything local is prepared: the folder is a git repository with one commit,
+index.html sends visitors to the app, and .gitignore keeps the local-only
+helper files out of the repo.
+
+STEP 1 — open the folder in GitHub Desktop
+  GitHub Desktop -> File -> Add local repository...
+  Repository path: this folder ( ...\service-portal )
+  It will say "this directory is a Git repository" — click Add repository.
+
+STEP 2 — publish it to your GitHub account
+  Top bar -> Publish repository
+  Name: solarwatt-service-portal     (this is what the URL is built from)
+  Description: optional
+  Uncheck "Keep this code private" if you do not have GitHub Pro —
+  GitHub Pages needs a public repository on the free plan. Only the app code
+  lives in the repo; no cases, installers or customer data are ever uploaded.
+  Click Publish repository. Wait for the upload to finish (the PDF library is
+  about 68 MB).
+
+STEP 3 — turn on the website
+  Open github.com in a browser (GitHub Desktop: Repository menu -> View on GitHub)
+  In the repo: Settings -> Pages
+  Source: "Deploy from a branch"
+  Branch: main   /   (root)          then Save
+  Wait about a minute. The green box shows the address:
+      https://<your-username>.github.io/solarwatt-service-portal/
+
+STEP 4 — move your data across
+  Open the old copy of Service-Portal.html (double-click, as you do today)
+  Data tab -> Export JSON -> save the file
+  Open the new https://...github.io address
+  Data tab -> Import JSON -> pick that file
+
+STEP 5 — install it
+  Edge, on the new address: menu (...) -> Apps -> Install this site as an app
+  Name it SOLARWATT Service Portal. It gets its own window and taskbar icon,
+  and works from then on without GitHub being open and without internet for
+  the app shell.
+
+NOTES
+  - Different addresses keep different data. Use the installed app from now
+    on; keep the old file:// copy only until you are happy with the move.
+  - Installing on another computer gives that computer its own local data. It
+    is not a shared multi-user database. Sharing cases between users needs a
+    hosted backend and accounts, which this portal does not have.
+  - Updates: replace Service-Portal.html in the folder, bump the cache name in
+    sw.js, commit and push in GitHub Desktop. Pages publishes in a minute;
+    open the app twice so it picks the new file up.
+  - Automatic backups: in the installed app, Data tab -> Choose backup folder,
+    once. It keeps writing dated JSON files there.
+  - If GitHub Pages asks for a "workflow", choose "Deploy from a branch" as
+    described above — no workflow file is needed.

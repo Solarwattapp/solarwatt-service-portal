@@ -1,0 +1,11 @@
+# local-only helpers, not part of the deployed app
+serve.py
+Start SOLARWATT Service Portal.bat
+Install as app - read me.txt
+
+# backups and system files
+_backup/
+__pycache__/
+*.pyc
+Thumbs.db
+.DS_Store
