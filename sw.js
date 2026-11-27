@@ -4,7 +4,7 @@
    cache first for icons and the manifest. Documents cache the first time they
    are opened, so the manual you used yesterday is still there offline.
    Cross-origin requests (fonts) are left to the browser. */
-const CACHE = 'solarwatt-service-portal-v1';
+const CACHE = 'solarwatt-service-portal-v2';
 const CORE = [
   './',
   './Service-Portal.html',

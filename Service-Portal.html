@@ -326,6 +326,18 @@ textarea.inp{height:auto;min-height:76px;padding:9px 10px;resize:vertical;line-h
 .diagram-actions .btn{height:29px;padding:0 9px;font-size:11.5px}
 .diagram-prod{margin-left:auto;font-family:var(--m);font-size:10px;color:var(--ink3)}
 .diagram-tag{font-size:10px;color:var(--teal);font-family:var(--m);letter-spacing:.05em}
+.reply-grid{display:grid;gap:10px;grid-template-columns:1fr}
+@media(min-width:980px){.reply-grid{grid-template-columns:repeat(2,1fr)}}
+.reply-card{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:11px 12px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.reply-top{display:flex;justify-content:space-between;align-items:flex-start;gap:9px}
+.reply-top h3{font-size:13.5px;line-height:1.3;margin:0}
+.reply-cat{font-size:10px;color:var(--teal);font-family:var(--m);letter-spacing:.05em;text-transform:uppercase;margin-bottom:3px}
+.reply-body{font-size:12px;line-height:1.55;color:var(--ink2);white-space:pre-line;display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden;min-height:66px}
+.reply-meta{font-family:var(--m);font-size:10px;color:var(--ink3);margin-left:auto;white-space:nowrap}
+.reply-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:auto;padding-top:2px}
+.reply-actions .btn{height:29px;padding:0 9px;font-size:11.5px}
+.reply-snips{display:flex;gap:5px;flex-wrap:wrap;margin:2px 0 10px}
+.reply-snips .fbtn{height:27px;font-size:11px}
 .pgrid{display:grid;gap:10px}
 @media(min-width:740px){.pgrid{grid-template-columns:repeat(3,1fr)}}
 .pcard{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:12px;display:flex;flex-direction:column;gap:9px}
@@ -513,7 +525,7 @@ const DB = {
     team:['Ana Duarte','Marcus Reid','Priya Raman','Tobias Lang','Sam Okafor'],
     sample:false, seqC:148, seqE:30
   },
-  installers:[], cases:[], enquiries:[], docs:[]
+  installers:[], cases:[], enquiries:[], docs:[], quickReplies:[]
 };
 
 /* ---------- storage ---------- */
@@ -536,6 +548,7 @@ function load(){
       DB.cases = p.cases||[];
       DB.enquiries = p.enquiries||[];
       DB.docs = p.docs||[];
+      DB.quickReplies = p.quickReplies||[];
       normalizeDB();
       return true;
     }
@@ -597,6 +610,13 @@ function normalizeDB(){
   });
   DB.docs=(Array.isArray(DB.docs)? DB.docs:[]).map(d=>Object.assign(
     {id:'',title:'',type:'Other',product:'all',version:'',notes:'',size:0,at:0}, d)).filter(d=>d.id&&d.title);
+  DB.quickReplies=(Array.isArray(DB.quickReplies)? DB.quickReplies:[]).map(r=>Object.assign(
+    {id:'',title:'',cat:'General',body:'',createdAt:0,updatedAt:0}, r)).filter(r=>r.id&&r.title&&r.body);
+  DB.quickReplies.forEach(r=>{
+    if(['General','Enquiry reply','Case update','Warranty','Installation','Commissioning'].indexOf(r.cat)<0) r.cat='General';
+    r.createdAt=Number(r.createdAt)||Number(r.updatedAt)||Date.now();
+    r.updatedAt=Number(r.updatedAt)||r.createdAt;
+  });
   DB.cases=(Array.isArray(DB.cases)? DB.cases:[]).map(c=>{
     c.system=Object.assign({}, c.system||{});
     c.site=Object.assign({}, c.site||{});
@@ -768,6 +788,7 @@ function applyRestore(obj,label){
   DB.installers=d.installers||[];
   DB.companies=d.companies||[];
   DB.docs=d.docs||[];
+  DB.quickReplies=d.quickReplies||[];
   DB.settings=Object.assign(DB.settings, d.settings||{});
   DB.settings.sla=Object.assign(DB.settings.sla||{}, (d.settings&&d.settings.sla)||{});
   normalizeDB();
@@ -1491,7 +1512,14 @@ const COMMISSION_GROUPS=[
 }
 ];
 
-const KB_TABS=[['products','Products'],['comm','Install & commissioning'],['diagrams','Diagrams'],['faults','Troubleshooting'],['codes','Alarm codes'],['warranty','Warranty'],['docs','Documents']];
+const KB_TABS=[['products','Products'],['replies','Quick replies'],['comm','Install & commissioning'],['diagrams','Diagrams'],['faults','Troubleshooting'],['codes','Alarm codes'],['warranty','Warranty'],['docs','Documents']];
+const REPLY_CATS=['General','Enquiry reply','Case update','Warranty','Installation','Commissioning'];
+const REPLY_SNIPPETS={
+  ack:{label:'Acknowledge',text:'Hi,\n\nThanks for your message. I have logged this with the SOLARWATT service team and we are checking it now.\n\n'},
+  details:{label:'Ask for details',text:'To progress this, please send:\n- site address\n- inverter or battery model\n- serial number\n- a photo of the display or alarm\n\n'},
+  next:{label:'Next step',text:'Next step: '},
+  close:{label:'Sign off',text:'Kind regards,\nSOLARWATT Service'}
+};
 const KB_DIAGRAM_PRODUCTS=[['all','All diagrams'],['visone','Vision one'],['visthree','Vision three'],['bat21','Battery vision']];
 const KB_DIAGRAMS=[
   {id:'one-pv',title:'Inverter-only power flow',tag:'Power flow',products:['visone'],
@@ -2101,7 +2129,7 @@ let state = {
   caseView:'table', caseSort:{key:'sla', dir:1},
   enqStatus:'all', enqChannel:'all', enqIns:'all',
   report:{ preset:'90', from:'', to:'', ins:'all', kind:'all', pri:'all' },
-  kbTab:'products', kbSearch:'', kbDocType:'all', kbDocProd:'all', kbDiagProd:'all', kbAlarmGrp:'all', insAccred:'all', insTab:'people'
+  kbTab:'products', kbSearch:'', kbDocType:'all', kbDocProd:'all', kbDiagProd:'all', replyCat:'all', kbAlarmGrp:'all', insAccred:'all', insTab:'people'
 };
 function currentRoute(){ const h=location.hash.replace(/^#\/?/,''); return h||'dashboard'; }
 function go(h){ location.hash=h; }
@@ -3480,6 +3508,7 @@ function kbLanding(){
   const q=kbQ();
   let body='';
   if(state.kbTab==='products') body=kbProductsBody();
+  else if(state.kbTab==='replies') body=kbRepliesBody();
   else if(state.kbTab==='comm') body=kbCommBody();
   else if(state.kbTab==='diagrams') body=kbDiagramsBody();
   else if(state.kbTab==='faults') body=kbFaultsBody();
@@ -3488,13 +3517,13 @@ function kbLanding(){
   else body=kbDocsBody();
 
   return ''+
-  '<div class="pg-head"><div><h1>Knowledge</h1><p class="sub">Vision product specs, commissioning steps, product diagrams, alarm codes, fault playbooks and the document library — what the desk needs before it calls an installer back</p></div>'+
+  '<div class="pg-head"><div><h1>Knowledge</h1><p class="sub">Vision product specs, quick replies, commissioning steps, product diagrams, alarm codes, fault playbooks and the document library — what the desk needs before it calls an installer back</p></div>'+
     '<div class="pg-actions"><button class="btn btn-p" data-act="newDoc">Add document</button><button class="btn" data-act="newCase">New case</button></div></div>'+
 
   '<div class="kbar">'+kbTabBtn()+
     (state.kbTab==='comm'? '' : '<div class="ksearch"><label style="display:flex;align-items:center;gap:6px;height:30px;padding:0 9px;border:1px solid var(--line);border-radius:var(--rs);background:#fff;flex:1">'+
       '<svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true" style="opacity:.5;flex:none"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"></circle><path d="M15.5 15.5 20 20" stroke="currentColor" stroke-width="1.8"></path></svg>'+
-      '<input data-role="kbSearch" type="search" placeholder="'+(state.kbTab==='docs'?'Document title, product, notes':state.kbTab==='codes'?'Alarm name, e.g. BMS Lost, Iso Fault':state.kbTab==='diagrams'?'Diagram title, product or setup':'Symptom, error, spec or model')+'" value="'+esc(state.kbSearch)+'" style="border:0;outline:0;width:100%;background:none;font-size:12.5px" autocomplete="off">'+
+      '<input data-role="kbSearch" type="search" placeholder="'+(state.kbTab==='docs'?'Document title, product, notes':state.kbTab==='codes'?'Alarm name, e.g. BMS Lost, Iso Fault':state.kbTab==='diagrams'?'Diagram title, product or setup':state.kbTab==='replies'?'Short name, category or wording':'Symptom, error, spec or model')+'" value="'+esc(state.kbSearch)+'" style="border:0;outline:0;width:100%;background:none;font-size:12.5px" autocomplete="off">'+
     '</label></div>')+
   '</div>'+
 
@@ -3721,6 +3750,72 @@ function kbDiagramCard(d){
       '<span class="diagram-prod">'+esc(prods)+'</span>'+
     '</div></div>';
 }
+function replyFind(id){ return (DB.quickReplies||[]).find(r=>r.id===id)||null; }
+function replyFormHTML(r){
+  r=r||{};
+  const snippets=Object.keys(REPLY_SNIPPETS).map(k=>'<button type="button" class="fbtn" data-act="replySnip" data-v="'+k+'">'+esc(REPLY_SNIPPETS[k].label)+'</button>').join('');
+  const del=r.id? '<button class="btn" type="button" data-act="delReply" data-id="'+esc(r.id)+'">Delete</button>':'<span></span>';
+  return '<form data-form="reply" data-id="'+esc(r.id||'')+'">'+
+    '<div class="frow two">'+
+      fld('Short name','<input class="inp" name="title" required maxlength="110" value="'+esc(r.title||'')+'" placeholder="e.g. Alarm code received — what we need">')+
+      fld('Category','<select class="inp" name="cat">'+REPLY_CATS.map(c=>opt(c,r.cat||'General')).join('')+'</select>')+
+    '</div>'+
+    fld('Reply text','<textarea class="inp" name="body" rows="14" required maxlength="5000" placeholder="Write it as you would send it. Plain text works in Outlook, Gmail, WhatsApp and SMS.">'+esc(r.body||'')+'</textarea>')+
+    '<div class="reply-snips">'+snippets+'</div>'+
+    '<p class="hint">Starter blocks insert at the cursor. Keep the wording plain and specific; the service team can edit before saving.</p>'+
+    '<div style="display:flex;gap:8px;justify-content:space-between;align-items:center;margin-top:16px;flex-wrap:wrap">'+
+      del+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+        '<button class="btn btn-p" type="submit">Save reply</button>'+
+        '<button class="btn" type="button" data-act="closeModal">Cancel</button>'+
+      '</div>'+
+    '</div>'+
+  '</form>';
+}
+function openReplyForm(id){
+  const r=id? replyFind(id):null;
+  modal(r? 'Edit quick reply':'New quick reply', replyFormHTML(r||{}), {focus:true});
+}
+function deleteReply(id){
+  const r=replyFind(id);
+  if(!r) return;
+  if(!confirm('Remove "'+r.title+'" from the quick reply library?\n\nA snapshot is taken first.')) return;
+  takeSnapshot('manual');
+  DB.quickReplies=DB.quickReplies.filter(x=>x.id!==id);
+  save(); closeModal(true); render(); toast('Quick reply removed');
+}
+function replyCard(r){
+  return '<div class="reply-card">'+
+    '<div class="reply-top"><div><div class="reply-cat">'+esc(r.cat)+'</div><h3>'+esc(r.title)+'</h3></div>'+
+      '<span class="reply-meta">'+esc(stroke(r.updatedAt))+'</span></div>'+
+    '<div class="reply-body">'+esc(r.body)+'</div>'+
+    '<div class="reply-actions">'+
+      '<button class="btn btn-p" data-act="copyReply" data-id="'+esc(r.id)+'">Copy</button>'+
+      '<button class="btn" data-act="editReply" data-id="'+esc(r.id)+'">Edit</button>'+
+      '<span class="reply-meta">'+String(r.body||'').length+' chars</span>'+
+    '</div>'+
+  '</div>';
+}
+function kbRepliesBody(){
+  const q=kbQ(), cat=state.replyCat;
+  let list=(DB.quickReplies||[]).slice().sort((a,b)=>b.updatedAt-a.updatedAt);
+  if(cat!=='all') list=list.filter(r=>r.cat===cat);
+  if(q) list=list.filter(r=>kbHit([r.title,r.cat,r.body].join(' ')));
+  const chip=(v,label)=>{
+    const on=cat===v;
+    return '<button class="fbtn" data-act="replyCat" data-v="'+esc(v)+'"'+(on?' style="background:var(--teal);color:#fff;border-color:var(--teal)"':'')+'>'+esc(label)+'</button>';
+  };
+  return '<div class="card"><div class="ch"><h3>Quick reply library</h3><span class="ref">'+list.length+' of '+(DB.quickReplies||[]).length+'</span></div>'+
+    '<div class="filterbar" style="margin:0 0 9px;border-bottom:1px solid var(--line2);padding-bottom:9px">'+
+      chip('all','All replies')+REPLY_CATS.map(c=>chip(c,c)).join('')+
+      '<button class="btn btn-p" data-act="newReply" style="margin-left:auto">New reply</button>'+
+    '</div>'+
+    (list.length? '<div class="reply-grid">'+list.map(r=>replyCard(r)).join('')+'</div>' :
+      emptyBox('No quick replies yet','Write the first answer your team sends again and again. A short name, a category and the text are enough.'))+
+    '<p class="hint" style="margin:12px 0 0">Copy puts the reply on the clipboard as plain text, ready for Outlook, Gmail, WhatsApp Web or an SMS draft. These replies are stored only in this browser — export Data regularly if the team relies on them.</p>'+
+  '</div>';
+}
+
 function kbDiagramsBody(){
   const q=kbQ(), p=state.kbDiagProd;
   let list=KB_DIAGRAMS.filter(d=>p==='all' || d.products.indexOf(p)>-1);
@@ -4675,6 +4770,23 @@ const ACT={
   },
   kbTab(t){ state.kbTab=t.dataset.v; const r=currentRoute().split('/'); if(r[0]==='knowledge' && r.length===1) render(); else go('#/knowledge'); },
   kbAlarmOpen(t){ state.kbTab='codes'; state.kbSearch=t.dataset.v; go('#/knowledge'); },
+  replyCat(t){ state.replyCat=t.dataset.v; render(); },
+  newReply(){ openReplyForm(''); },
+  editReply(t){ openReplyForm(t.dataset.id); },
+  delReply(t){ deleteReply(t.dataset.id); },
+  copyReply(t){ const r=replyFind(t.dataset.id); if(!r) return; copyPlainText(r.body, 'Reply copied — paste into your email or message'); },
+  replySnip(t){
+    const f=modalForm(), ta=f? f.querySelector('textarea[name="body"]'):null;
+    const snip=REPLY_SNIPPETS[t.dataset.v];
+    if(!ta || !snip) return;
+    const start=ta.selectionStart||0, end=ta.selectionEnd||start;
+    const before=ta.value.slice(0,start), after=ta.value.slice(end);
+    const prefix=(before && !/\n\n$/.test(before))? '\n\n':'';
+    ta.value=before+prefix+snip.text+after;
+    const pos=(before+prefix+snip.text).length;
+    ta.focus(); ta.setSelectionRange(pos,pos);
+    ta.dispatchEvent(new Event('input',{bubbles:true}));
+  },
   kbDiagProd(t){ state.kbDiagProd=t.dataset.v; render(); },
   kbDiagForProduct(t){ state.kbTab='diagrams'; state.kbDiagProd=t.dataset.id||'all'; state.kbSearch=''; go('#/knowledge'); },
   copyDiagram(t){ copyDiagramImage(t.dataset.id); },
@@ -5012,6 +5124,24 @@ document.addEventListener('submit', async function(e){
     if(STAGE_IDX[c.stage]<STAGE_IDX['Parts / RMA']) moveToStage(c,'Parts / RMA','Service desk');
     loggedAction(c,'Parts','Service desk','RMA '+c.rma.no+' raised for '+part+'. '+(c.rma.carrier? 'Dispatch booked with '+c.rma.carrier+'.':''));
     save(); closeModal(true); render(); toast('RMA '+c.rma.no+' saved');
+    return;
+  }
+
+  if(kind==='reply'){
+    const title=formVal(f,'title');
+    const body=formVal(f,'body');
+    if(!title){ toast('Give the reply a short name.'); return; }
+    if(!body){ toast('Write the reply text.'); return; }
+    const id=f.dataset.id;
+    const now=Date.now();
+    let r=id? replyFind(id):null;
+    if(!r){ r={id:uid('r'), createdAt:now}; DB.quickReplies.unshift(r); }
+    r.title=title;
+    r.cat=formVal(f,'cat')||'General';
+    r.body=body;
+    r.updatedAt=now;
+    save(); closeModal(true); state.kbTab='replies'; render();
+    toast(id? 'Quick reply updated' : 'Quick reply saved');
     return;
   }
 
